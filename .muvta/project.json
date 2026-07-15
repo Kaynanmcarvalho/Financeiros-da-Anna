@@ -1,0 +1,9 @@
+{
+  "framework": "react",
+  "linguagem": "typescript",
+  "banco": "firestore",
+  "auth": "firebase",
+  "tema": "dark+light",
+  "css": "tailwind",
+  "arquitetura": "spa+api"
+}
