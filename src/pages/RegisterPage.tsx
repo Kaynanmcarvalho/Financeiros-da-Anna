@@ -44,6 +44,10 @@ export default function RegisterPage() {
       createdAt: serverTimestamp() as any,
       lastLoginAt: serverTimestamp() as any,
       preferences: DEFAULT_PREFERENCES,
+      role: 'user',
+      blocked: false,
+      blockedAt: null,
+      blockedBy: null,
     };
     await setDocument(`users/${uid}`, profile);
 

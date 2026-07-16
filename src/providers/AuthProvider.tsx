@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import { onAuthStateChanged, type User } from 'firebase/auth';
-import { auth } from '@/firebase/config';
-import { getDocument } from '@/firebase/firestore';
+import { addDoc, collection, doc, onSnapshot, serverTimestamp } from 'firebase/firestore';
+import { auth, db } from '@/firebase/config';
 import { usePreferencesStore } from '@/stores/preferencesStore';
 import type { UserProfile } from '@/types';
 import { DEFAULT_PREFERENCES } from '@/constants/app';
@@ -20,6 +20,27 @@ const AuthContext = createContext<AuthContextValue>({
   setUserProfile: () => {},
 });
 
+async function registerSessionVisit(uid: string) {
+  const sessionKey = `visit-recorded:${uid}`;
+
+  try {
+    if (sessionStorage.getItem(sessionKey)) return;
+    sessionStorage.setItem(sessionKey, 'true');
+  } catch {
+    // O navegador pode bloquear sessionStorage; a autenticação deve continuar funcionando.
+  }
+
+  try {
+    await addDoc(collection(db, 'userVisits'), {
+      uid,
+      visitedAt: serverTimestamp(),
+    });
+  } catch (error) {
+    // Analytics nunca deve impedir o acesso ao aplicativo.
+    console.warn('Não foi possível registrar a visita:', error);
+  }
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
@@ -27,32 +48,61 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const setPreferences = usePreferencesStore((s) => s.setPreferences);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+    let unsubscribeProfile: (() => void) | undefined;
+
+    const unsubscribeAuth = onAuthStateChanged(auth, (firebaseUser) => {
+      unsubscribeProfile?.();
+      unsubscribeProfile = undefined;
       setUser(firebaseUser);
+      setUserProfile(null);
+      setLoading(true);
 
-      if (firebaseUser) {
-        try {
-          const profile = await getDocument<UserProfile>(`users/${firebaseUser.uid}`);
-          setUserProfile(profile);
-
-          // Apply user preferences before first paint
-          if (profile?.preferences) {
-            setPreferences(profile.preferences);
-          } else {
-            setPreferences(DEFAULT_PREFERENCES);
-          }
-        } catch {
-          setPreferences(DEFAULT_PREFERENCES);
-        }
-      } else {
-        setUserProfile(null);
+      if (!firebaseUser) {
         setPreferences(DEFAULT_PREFERENCES);
+        setLoading(false);
+        return;
       }
 
-      setLoading(false);
+      const profileRef = doc(db, 'users', firebaseUser.uid);
+      unsubscribeProfile = onSnapshot(
+        profileRef,
+        (snapshot) => {
+          if (!snapshot.exists()) {
+            setUserProfile(null);
+            setPreferences(DEFAULT_PREFERENCES);
+            setLoading(false);
+            return;
+          }
+
+          const data = snapshot.data() as UserProfile;
+          const profile: UserProfile = {
+            ...data,
+            uid: data.uid ?? snapshot.id,
+            role: data.role ?? 'user',
+            blocked: data.blocked ?? false,
+          };
+
+          setUserProfile(profile);
+          setPreferences(profile.preferences ?? DEFAULT_PREFERENCES);
+          setLoading(false);
+
+          if (!profile.blocked) {
+            void registerSessionVisit(firebaseUser.uid);
+          }
+        },
+        (error) => {
+          console.error('Erro ao acompanhar o perfil:', error);
+          setUserProfile(null);
+          setPreferences(DEFAULT_PREFERENCES);
+          setLoading(false);
+        }
+      );
     });
 
-    return () => unsubscribe();
+    return () => {
+      unsubscribeProfile?.();
+      unsubscribeAuth();
+    };
   }, [setPreferences]);
 
   return (

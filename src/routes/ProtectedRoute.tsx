@@ -3,14 +3,14 @@ import { useAuth } from '@/providers/AuthProvider';
 import { PageLoader } from '@/components/ui/PageLoader';
 import type { ReactNode } from 'react';
 
-interface ProtectedRouteProps {
+interface RouteGuardProps {
   children: ReactNode;
 }
 
-export function ProtectedRoute({ children }: ProtectedRouteProps) {
-  const { user, loading } = useAuth();
+export function ProtectedRoute({ children }: RouteGuardProps) {
+  const { user, userProfile, loading } = useAuth();
 
-  if (loading) {
+  if (loading || (user && !userProfile)) {
     return <PageLoader />;
   }
 
@@ -18,18 +18,44 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     return <Navigate to="/login" replace />;
   }
 
+  if (userProfile?.blocked) {
+    return <Navigate to="/bloqueado" replace />;
+  }
+
   return <>{children}</>;
 }
 
-interface PublicOnlyRouteProps {
-  children: ReactNode;
+export function AdminRoute({ children }: RouteGuardProps) {
+  const { user, userProfile, loading } = useAuth();
+
+  if (loading || (user && !userProfile)) {
+    return <PageLoader />;
+  }
+
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (userProfile?.blocked) {
+    return <Navigate to="/bloqueado" replace />;
+  }
+
+  if (userProfile?.role !== 'admin') {
+    return <Navigate to="/" replace />;
+  }
+
+  return <>{children}</>;
 }
 
-export function PublicOnlyRoute({ children }: PublicOnlyRouteProps) {
-  const { user, loading } = useAuth();
+export function PublicOnlyRoute({ children }: RouteGuardProps) {
+  const { user, userProfile, loading } = useAuth();
 
-  if (loading) {
+  if (loading || (user && !userProfile)) {
     return <PageLoader />;
+  }
+
+  if (userProfile?.blocked) {
+    return <Navigate to="/bloqueado" replace />;
   }
 
   if (user) {

@@ -152,7 +152,7 @@ export function TransactionForm({ isOpen, onClose, defaultType = 'expense', init
           ]} 
         />
 
-        <div className="p-6 bg-[var(--color-bg-secondary)] rounded-2xl border border-[var(--color-border)] flex justify-center">
+        <div className="flex justify-center rounded-2xl border border-[var(--color-info)]/15 bg-gradient-to-br from-[var(--color-info)]/10 to-[var(--surface-raised)] p-4 shadow-sm sm:p-6">
           <Controller
             control={control}
             name="amount"
@@ -177,7 +177,7 @@ export function TransactionForm({ isOpen, onClose, defaultType = 'expense', init
           {...register('description')}
         />
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2">
           <Input
             label="Data"
             type="date"
@@ -196,7 +196,7 @@ export function TransactionForm({ isOpen, onClose, defaultType = 'expense', init
         </div>
 
         {txType === 'transfer' ? (
-          <div className="grid grid-cols-2 gap-4 bg-[var(--color-bg-secondary)] p-4 rounded-xl border border-[var(--color-border)]">
+          <div className="grid min-w-0 grid-cols-1 gap-4 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-subtle)] p-4 sm:grid-cols-2">
             <Select
               label="Conta Origem"
               error={errors.accountId?.message}
@@ -229,7 +229,7 @@ export function TransactionForm({ isOpen, onClose, defaultType = 'expense', init
           </div>
         )}
 
-        <div className="flex justify-end gap-3 mt-4 pt-4 border-t border-[var(--color-border)]">
+        <div className="grid min-w-0 grid-cols-1 gap-3 border-t border-[var(--border-subtle)] pt-4 sm:grid-cols-2">
           <Button type="button" variant="ghost" onClick={onClose}>Cancelar</Button>
           <Button type="submit" loading={createMutation.isPending || updateMutation.isPending}>
             {initialData ? 'Salvar Alterações' : 'Salvar'}

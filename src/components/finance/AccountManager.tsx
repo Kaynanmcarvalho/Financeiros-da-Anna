@@ -20,12 +20,16 @@ import { ColorPicker } from '@/components/ui/ColorPicker';
 import { SkeletonList } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 
-export function AccountManager() {
+interface AccountManagerProps {
+  initialMode?: 'list' | 'create';
+}
+
+export function AccountManager({ initialMode = 'list' }: AccountManagerProps) {
   const { data: accounts, isLoading } = useAccounts();
   const deleteAccountMutation = useDeleteAccount();
   const openConfirmDialog = useUIStore((s) => s.openConfirmDialog);
 
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(initialMode === 'create');
   const [editingAccount, setEditingAccount] = useState<Account | null>(null);
 
   const handleOpenCreate = () => {
@@ -53,7 +57,7 @@ export function AccountManager() {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex justify-between items-center mb-2">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-2">
         <h3 className="font-semibold text-lg text-[var(--color-text)]">Contas e Cartões</h3>
         <Button size="sm" onClick={handleOpenCreate} icon={<Plus size={16} />}>
           Nova Conta
@@ -73,18 +77,18 @@ export function AccountManager() {
           {accounts.map((account) => (
             <div
               key={account.id}
-              className={`flex items-center justify-between p-4 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] transition-shadow hover:shadow-sm ${account.archived ? 'opacity-60 grayscale' : ''}`}
+              className={`flex min-w-0 flex-col gap-3 p-4 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] transition-shadow hover:shadow-sm sm:flex-row sm:items-center sm:justify-between ${account.archived ? 'opacity-60 grayscale' : ''}`}
             >
-              <div className="flex items-center gap-4">
+              <div className="flex min-w-0 items-center gap-3 sm:gap-4">
                 <div
                   className="w-12 h-12 rounded-full flex items-center justify-center text-white shrink-0"
                   style={{ backgroundColor: account.color }}
                 >
                   <LucideIcon name={account.icon} size={24} />
                 </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h4 className="font-semibold text-[var(--color-text)]">{account.name}</h4>
+                <div className="min-w-0">
+                  <div className="flex min-w-0 flex-wrap items-center gap-2">
+                    <h4 className="min-w-0 break-words font-semibold text-[var(--color-text)]">{account.name}</h4>
                     {account.archived && <span className="bg-[var(--color-warning)] text-[var(--color-bg)] font-bold text-[10px] px-2 py-0.5 rounded-full uppercase tracking-wider">Arquivada</span>}
                   </div>
                   <p className="text-sm text-[var(--color-text-secondary)]">
@@ -93,8 +97,8 @@ export function AccountManager() {
                 </div>
               </div>
 
-              <div className="flex items-center gap-2">
-                <div className="text-right mr-2 hidden sm:block">
+              <div className="flex min-w-0 items-center justify-end gap-1 border-t border-[var(--color-border)] pt-2 sm:border-0 sm:pt-0">
+                <div className="mr-auto min-w-0 text-left sm:mr-2 sm:text-right">
                   {account.type === 'credit_card' && account.creditLimit ? (
                     <>
                       <p className="text-xs text-[var(--color-text-secondary)]">Limite</p>

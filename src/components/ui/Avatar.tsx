@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { User } from 'lucide-react';
 
 interface AvatarProps {
@@ -25,8 +26,14 @@ const sizeMap = {
 };
 
 export function Avatar({ src, name, size = 'md', onClick, className = '' }: AvatarProps) {
+  const [imageFailed, setImageFailed] = useState(false);
   const pixelSize = sizeMap[size];
   const initials = name ? getInitials(name) : '';
+  const showImage = Boolean(src) && !imageFailed;
+
+  useEffect(() => {
+    setImageFailed(false);
+  }, [src]);
 
   return (
     <button
@@ -37,12 +44,13 @@ export function Avatar({ src, name, size = 'md', onClick, className = '' }: Avat
       aria-label={name ? `Perfil de ${name}` : 'Perfil'}
       tabIndex={onClick ? 0 : -1}
     >
-      {src ? (
+      {showImage ? (
         <img
-          src={src}
+          src={src ?? undefined}
           alt={name ?? 'Avatar'}
           className="avatar-img"
           loading="lazy"
+          onError={() => setImageFailed(true)}
         />
       ) : initials ? (
         <span className="avatar-initials">{initials}</span>

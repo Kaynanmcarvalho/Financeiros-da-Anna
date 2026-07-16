@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip } from 'recharts';
-import { Search, Download } from 'lucide-react';
+import { Search, Download, BarChart3 } from 'lucide-react';
 
 import { useTransactions } from '@/hooks/useTransactions';
 import { useCategories } from '@/hooks/useCategories';
@@ -15,7 +15,6 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { SkeletonCard } from '@/components/ui/Skeleton';
 import { LucideIcon } from '@/components/ui/IconPicker';
 import { Card } from '@/components/ui/Card';
-import { Button } from '@/components/ui/Button';
 
 export default function ReportsPage() {
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -115,8 +114,44 @@ export default function ReportsPage() {
   };
 
   return (
-    <div className="page max-w-2xl mx-auto flex flex-col gap-6 pb-24">
-      <div className="sticky top-0 z-10 bg-[var(--color-bg)] pt-2 pb-2 -mx-4 px-4 sm:-mx-6 sm:px-6 flex flex-col gap-4">
+    <div className="page mx-auto flex min-w-0 max-w-2xl flex-col gap-5 overflow-x-hidden pb-24">
+      <section className="relative overflow-hidden rounded-[28px] border border-[var(--color-chart-3)]/25 bg-gradient-to-br from-[var(--color-chart-3)]/15 via-[var(--surface-raised)] to-[var(--color-accent)]/15 p-5 shadow-[var(--shadow-soft)] sm:p-6">
+        <div className="pointer-events-none absolute -right-10 -top-12 h-36 w-36 rounded-full bg-[var(--color-chart-3)]/15 blur-2xl" />
+        <div className="relative flex min-w-0 items-start gap-4">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[var(--color-chart-3)] to-[var(--color-accent)] text-white shadow-lg shadow-[var(--color-chart-3)]/20">
+            <BarChart3 size={24} />
+          </div>
+          <div className="min-w-0 flex-1">
+            <span className="mb-1 block text-[11px] font-bold uppercase tracking-[0.16em] text-[var(--color-info)]">Inteligência financeira</span>
+            <h1 className="text-xl font-extrabold text-[var(--color-text)] sm:text-2xl">Meus relatórios</h1>
+            <p className="mt-1 text-sm leading-relaxed text-[var(--color-text-secondary)]">Entenda para onde vai seu dinheiro e tome decisões com mais confiança.</p>
+          </div>
+        </div>
+
+        <div className="relative mt-5 grid grid-cols-2 gap-3">
+          <div className="min-w-0 rounded-2xl border border-[var(--color-border)]/70 bg-[var(--surface-elevated)]/85 p-3 backdrop-blur-sm">
+            <span className="text-xs font-semibold text-[var(--color-text-secondary)]">Total analisado</span>
+            <strong className={`mt-1 block min-w-0 break-all text-base font-extrabold sm:text-lg ${activeTab === 'expense' ? 'text-[var(--color-danger)]' : 'text-[var(--color-success)]'}`}>
+              {hideValues ? '••••••' : formatCurrency(totalAmount)}
+            </strong>
+          </div>
+          <div className="rounded-2xl border border-[var(--color-border)]/70 bg-[var(--surface-elevated)]/85 p-3 backdrop-blur-sm">
+            <span className="text-xs font-semibold text-[var(--color-text-secondary)]">Categorias</span>
+            <strong className="mt-1 block text-2xl font-extrabold text-[var(--color-text)]">{chartData.length}</strong>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          onClick={handleExportCSV}
+          disabled={isLoading || !transactions?.length}
+          className="relative mt-3 flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[var(--color-chart-3)] to-[var(--color-accent)] px-4 py-3 text-sm font-extrabold text-white shadow-lg shadow-[var(--color-chart-3)]/20 transition-all hover:brightness-105 focus:outline-none focus:ring-4 focus:ring-[var(--color-chart-3)]/20 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          <Download size={18} /> Exportar relatório
+        </button>
+      </section>
+
+      <div className="sticky top-0 z-10 -mx-4 flex flex-col gap-3 border-y border-[var(--border-subtle)] bg-[var(--surface-nav)] px-4 py-2 backdrop-blur-xl sm:-mx-6 sm:px-6">
         <MonthSelector currentDate={currentDate} onChange={setCurrentDate} />
         <Tabs 
           activeTab={activeTab}
@@ -148,7 +183,7 @@ export default function ReportsPage() {
           className="flex flex-col gap-6"
         >
           {/* Chart Card */}
-          <Card className="p-4 flex flex-col items-center justify-center relative">
+          <Card className="relative flex min-w-0 flex-col items-center justify-center overflow-hidden rounded-[24px] border border-[var(--border-subtle)] bg-[var(--surface-raised)] p-4 shadow-[var(--shadow-soft)] sm:p-5">
             <div className="h-[250px] w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
@@ -186,21 +221,21 @@ export default function ReportsPage() {
             <h3 className="font-semibold text-lg text-[var(--color-text)] ml-1">Detalhamento</h3>
             
             {chartData.map((item) => (
-              <Card key={item.id} className="p-4 flex flex-col gap-3 group">
-                <div className="flex justify-between items-center">
-                  <div className="flex items-center gap-3">
+              <Card key={item.id} className="group flex min-w-0 flex-col gap-3 overflow-hidden rounded-[24px] border border-[var(--border-subtle)] bg-[var(--surface-raised)] p-4 shadow-[var(--shadow-soft)] transition-all hover:border-[var(--color-button)]/20 sm:p-5">
+                <div className="flex min-w-0 items-center justify-between gap-3">
+                  <div className="flex min-w-0 items-center gap-3">
                     <div 
                       className="w-10 h-10 rounded-xl flex items-center justify-center text-white shrink-0 shadow-sm transition-transform group-hover:scale-110"
                       style={{ backgroundColor: item.color }}
                     >
                       <LucideIcon name={item.icon} size={20} />
                     </div>
-                    <div className="flex flex-col">
-                      <span className="font-semibold text-[var(--color-text)]">{item.name}</span>
+                    <div className="flex min-w-0 flex-col">
+                      <span className="break-words font-semibold text-[var(--color-text)]">{item.name}</span>
                       <span className="text-xs font-medium text-[var(--color-text-secondary)]">{item.percent.toFixed(1)}%</span>
                     </div>
                   </div>
-                  <span className="font-bold text-[var(--color-text)]">
+                  <span className="max-w-[45%] shrink-0 break-all text-right font-bold text-[var(--color-text)]">
                     {hideValues ? '••••••' : formatCurrency(item.amount)}
                   </span>
                 </div>
@@ -215,10 +250,7 @@ export default function ReportsPage() {
               </Card>
             ))}
           </div>
-          {/* Botão Exportar */}
-          <Button variant="outline" className="w-full mt-4" onClick={handleExportCSV}>
-            <Download size={18} className="mr-2" /> Exportar para CSV
-          </Button>
+
         </motion.div>
       )}
     </div>

@@ -14,21 +14,26 @@ export function useUpdateProfile() {
     mutationFn: async (data: { name?: string; photoURL?: string }) => {
       if (!user || !userProfile) throw new Error('Não autenticado');
 
-      // Update in Firebase Auth
-      if (data.name || data.photoURL !== undefined) {
-        await updateFirebaseAuthProfile({
-          displayName: data.name ?? user.displayName ?? undefined,
-          photoURL: data.photoURL ?? user.photoURL ?? undefined,
-        });
-      }
-
-      // Update in Firestore profile doc
+      // Firestore é a fonte canônica usada pela interface e no próximo login.
       const updates: Record<string, unknown> = {};
       if (data.name) updates.name = data.name;
       if (data.photoURL !== undefined) updates.photoURL = data.photoURL;
 
       if (Object.keys(updates).length > 0) {
         await updateDocument(`users/${user.uid}`, updates);
+      }
+
+      // Mantém o perfil do Firebase Auth sincronizado sem impedir a atualização visual
+      // caso essa etapa secundária falhe depois de o Firestore já ter sido salvo.
+      if (data.name || data.photoURL !== undefined) {
+        try {
+          await updateFirebaseAuthProfile({
+            displayName: data.name ?? user.displayName ?? undefined,
+            photoURL: data.photoURL ?? user.photoURL ?? undefined,
+          });
+        } catch (error) {
+          console.warn('Perfil salvo no Firestore, mas não sincronizado no Auth:', error);
+        }
       }
 
       return { ...userProfile, ...updates };

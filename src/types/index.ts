@@ -18,6 +18,8 @@ export interface UserPreferences {
   hideValues: boolean;
 }
 
+export type UserRole = 'user' | 'admin';
+
 export interface UserProfile {
   uid: string;
   name: string;
@@ -26,6 +28,16 @@ export interface UserProfile {
   createdAt: Timestamp;
   lastLoginAt: Timestamp;
   preferences: UserPreferences;
+  role?: UserRole;
+  blocked?: boolean;
+  blockedAt?: Timestamp | null;
+  blockedBy?: string | null;
+}
+
+export interface UserVisit {
+  id: string;
+  uid: string;
+  visitedAt: Timestamp;
 }
 
 // ==========================================
@@ -162,5 +174,5 @@ export interface ThemePreset {
   preferences: Pick<
     UserPreferences,
     'primaryColor' | 'buttonColor' | 'cardColor' | 'accentColor' | 'bottomBarColor' | 'chartPalette'
-  >;
+  > & Partial<Pick<UserPreferences, 'theme'>>;
 }

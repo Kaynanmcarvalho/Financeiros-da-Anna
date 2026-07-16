@@ -1,6 +1,6 @@
 import { createBrowserRouter, type RouteObject } from 'react-router-dom';
 import { lazy, Suspense } from 'react';
-import { ProtectedRoute, PublicOnlyRoute } from './ProtectedRoute';
+import { ProtectedRoute, PublicOnlyRoute, AdminRoute } from './ProtectedRoute';
 import { AppLayout } from '@/layouts/AppLayout';
 import { AuthLayout } from '@/layouts/AuthLayout';
 import { PageLoader } from '@/components/ui/PageLoader';
@@ -8,10 +8,14 @@ import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
 
 // Lazy-loaded pages
 const HomePage = lazy(() => import('@/pages/HomePage'));
+const AccountsPage = lazy(() => import('@/pages/AccountsPage'));
+const CategoriesPage = lazy(() => import('@/pages/CategoriesPage'));
 const TransactionsPage = lazy(() => import('@/pages/TransactionsPage'));
 const PlanningPage = lazy(() => import('@/pages/PlanningPage'));
 const ReportsPage = lazy(() => import('@/pages/ReportsPage'));
 const ProfilePage = lazy(() => import('@/pages/ProfilePage'));
+const AdminPage = lazy(() => import('@/pages/AdminPage'));
+const BlockedPage = lazy(() => import('@/pages/BlockedPage'));
 const LoginPage = lazy(() => import('@/pages/LoginPage'));
 const RegisterPage = lazy(() => import('@/pages/RegisterPage'));
 const ForgotPasswordPage = lazy(() => import('@/pages/ForgotPasswordPage'));
@@ -38,6 +42,22 @@ const protectedRoutes: RouteObject[] = [
         element: (
           <SuspenseWrapper>
             <HomePage />
+          </SuspenseWrapper>
+        ),
+      },
+      {
+        path: 'contas',
+        element: (
+          <SuspenseWrapper>
+            <AccountsPage />
+          </SuspenseWrapper>
+        ),
+      },
+      {
+        path: 'categorias',
+        element: (
+          <SuspenseWrapper>
+            <CategoriesPage />
           </SuspenseWrapper>
         ),
       },
@@ -89,6 +109,16 @@ const protectedRoutes: RouteObject[] = [
           </SuspenseWrapper>
         ),
       },
+      {
+        path: 'admin',
+        element: (
+          <AdminRoute>
+            <SuspenseWrapper>
+              <AdminPage />
+            </SuspenseWrapper>
+          </AdminRoute>
+        ),
+      },
     ],
   },
 ];
@@ -129,4 +159,13 @@ const publicRoutes: RouteObject[] = [
   },
 ];
 
-export const router = createBrowserRouter([...protectedRoutes, ...publicRoutes]);
+const blockedRoute: RouteObject = {
+  path: '/bloqueado',
+  element: (
+    <SuspenseWrapper>
+      <BlockedPage />
+    </SuspenseWrapper>
+  ),
+};
+
+export const router = createBrowserRouter([...protectedRoutes, ...publicRoutes, blockedRoute]);

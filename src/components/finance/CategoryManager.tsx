@@ -59,7 +59,7 @@ export function CategoryManager() {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex justify-between items-center mb-2">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-2">
         <h3 className="font-semibold text-lg text-[var(--color-text)]">Categorias</h3>
         <Button size="sm" onClick={handleOpenCreate} icon={<Plus size={16} />}>
           Nova Categoria
@@ -87,17 +87,17 @@ export function CategoryManager() {
           {filteredCategories.map((category) => (
             <div 
               key={category.id} 
-              className="flex items-center justify-between p-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] transition-shadow hover:shadow-sm group"
+              className="group flex min-w-0 items-center justify-between gap-2 p-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] transition-shadow hover:shadow-sm"
             >
-              <div className="flex items-center gap-3">
+              <div className="flex min-w-0 items-center gap-3">
                 <div 
                   className="w-10 h-10 rounded-xl flex items-center justify-center text-white shrink-0 shadow-sm"
                   style={{ backgroundColor: category.color }}
                 >
                   <LucideIcon name={category.icon} size={20} />
                 </div>
-                <div className="flex flex-col">
-                  <span className="font-medium text-[var(--color-text)] text-sm">{category.name}</span>
+                <div className="flex min-w-0 flex-col">
+                  <span className="min-w-0 break-words font-medium text-[var(--color-text)] text-sm">{category.name}</span>
                   {category.isDefault && (
                     <span className="text-[10px] text-[var(--color-text-muted)] flex items-center gap-1 mt-0.5">
                       <Lock size={10} /> Padrão
@@ -106,7 +106,7 @@ export function CategoryManager() {
                 </div>
               </div>
               
-              <div className="flex items-center opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
+              <div className="flex shrink-0 items-center opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100">
                 <button 
                   onClick={() => handleOpenEdit(category)}
                   className="p-2 rounded-lg text-[var(--color-text-muted)] hover:text-[var(--color-button)] transition-colors"

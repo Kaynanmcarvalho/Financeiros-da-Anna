@@ -27,7 +27,7 @@ export function AppLayout() {
   const animationsEnabled = usePreferencesStore((s) => s.preferences.animationsEnabled);
 
   const isActive = (path: string) => {
-    if (path === '/') return location.pathname === '/';
+    if (path === '/') return ['/', '/contas', '/categorias'].includes(location.pathname);
     return location.pathname.startsWith(path);
   };
 

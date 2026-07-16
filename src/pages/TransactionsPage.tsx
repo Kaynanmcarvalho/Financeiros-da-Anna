@@ -60,28 +60,46 @@ export default function TransactionsPage() {
   };
 
   return (
-    <div className="page max-w-2xl mx-auto flex flex-col gap-6 pb-24">
-      <div className="sticky top-0 z-10 bg-[var(--color-bg)] pt-2 pb-2 -mx-4 px-4 sm:-mx-6 sm:px-6">
-        <MonthSelector currentDate={currentDate} onChange={setCurrentDate} />
-      </div>
+    <div className="page mx-auto flex min-w-0 max-w-2xl flex-col gap-5 overflow-x-hidden pb-24">
+      <section className="relative overflow-hidden rounded-[28px] border border-[var(--color-info)]/20 bg-gradient-to-br from-[var(--color-info)]/15 via-[var(--surface-raised)] to-[var(--color-primary)]/15 p-5 shadow-[var(--shadow-soft)] sm:p-6">
+        <div className="pointer-events-none absolute -right-10 -top-12 h-36 w-36 rounded-full bg-[var(--color-info)]/10 blur-2xl" />
+        <div className="relative flex min-w-0 items-start gap-4">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[var(--color-info)] to-[var(--color-button)] text-white shadow-lg shadow-[var(--color-info)]/20">
+            <Plus size={25} strokeWidth={2.5} />
+          </div>
+          <div className="min-w-0 flex-1">
+            <span className="mb-1 block text-[11px] font-bold uppercase tracking-[0.16em] text-[var(--color-info)]">Movimentação financeira</span>
+            <h1 className="text-xl font-extrabold text-[var(--color-text)] sm:text-2xl">Meus lançamentos</h1>
+            <p className="mt-1 text-sm leading-relaxed text-[var(--color-text-secondary)]">Registre suas entradas e saídas com clareza e acompanhe cada movimento.</p>
+          </div>
+        </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        <div className="card card-glass p-3 flex flex-col gap-1 border-b-2 border-b-[var(--color-success)]">
-          <span className="text-xs text-[var(--color-text-secondary)] flex items-center gap-1">
-            <ArrowDownRight size={14} className="text-[var(--color-success)]" /> Receitas
-          </span>
-          <span className="font-semibold text-sm sm:text-base text-[var(--color-success)]">
-            {formatCurrency(totals.income)}
-          </span>
+        <div className="relative mt-5 grid grid-cols-2 gap-3">
+          <div className="min-w-0 rounded-2xl border border-[var(--color-success)]/15 bg-[var(--surface-elevated)]/85 p-3 backdrop-blur-sm">
+            <span className="flex items-center gap-1.5 text-xs font-semibold text-[var(--color-text-secondary)]">
+              <ArrowDownRight size={14} className="text-[var(--color-success)]" /> Receitas
+            </span>
+            <strong className="mt-1 block min-w-0 break-all text-base font-extrabold text-[var(--color-success)] sm:text-lg">{formatCurrency(totals.income)}</strong>
+          </div>
+          <div className="min-w-0 rounded-2xl border border-[var(--color-danger)]/15 bg-[var(--surface-elevated)]/85 p-3 backdrop-blur-sm">
+            <span className="flex items-center gap-1.5 text-xs font-semibold text-[var(--color-text-secondary)]">
+              <ArrowUpRight size={14} className="text-[var(--color-danger)]" /> Despesas
+            </span>
+            <strong className="mt-1 block min-w-0 break-all text-base font-extrabold text-[var(--color-danger)] sm:text-lg">{formatCurrency(totals.expense)}</strong>
+          </div>
         </div>
-        <div className="card card-glass p-3 flex flex-col gap-1 border-b-2 border-b-[var(--color-danger)]">
-          <span className="text-xs text-[var(--color-text-secondary)] flex items-center gap-1">
-            <ArrowUpRight size={14} className="text-[var(--color-danger)]" /> Despesas
-          </span>
-          <span className="font-semibold text-sm sm:text-base text-[var(--color-danger)]">
-            {formatCurrency(totals.expense)}
-          </span>
-        </div>
+
+        <button
+          type="button"
+          onClick={() => { setTransactionToEdit(undefined); setIsFormOpen(true); }}
+          className="relative mt-3 flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[var(--color-info)] to-[var(--color-button)] px-4 py-3 text-sm font-extrabold text-white shadow-lg shadow-[var(--color-info)]/20 transition-all hover:brightness-105 focus:outline-none focus:ring-4 focus:ring-[var(--color-info)]/20"
+        >
+          <Plus size={18} /> Novo lançamento
+        </button>
+      </section>
+
+      <div className="sticky top-0 z-10 -mx-4 border-y border-[var(--border-subtle)] bg-[var(--surface-nav)] px-4 py-2 backdrop-blur-xl sm:-mx-6 sm:px-6">
+        <MonthSelector currentDate={currentDate} onChange={setCurrentDate} />
       </div>
 
       {isLoading ? (
@@ -99,7 +117,7 @@ export default function TransactionsPage() {
             const cat = isTransfer ? { name: 'Transferência', icon: 'ArrowRightLeft', color: 'var(--color-info)' } : getCategoryDetails(tx.categoryId);
             
             return (
-              <div key={tx.id} className="flex items-center justify-between p-4 rounded-2xl bg-[var(--color-card)] border border-[var(--color-border)] group transition-shadow hover:shadow-sm">
+              <div key={tx.id} className="group relative flex min-w-0 items-center justify-between overflow-hidden rounded-[24px] border border-[var(--border-subtle)] bg-[var(--surface-raised)] p-4 shadow-[var(--shadow-soft)] transition-all hover:border-[var(--color-info)]/25 hover:shadow-[var(--shadow-raised)] sm:p-5">
                 <div className="flex items-center gap-3 overflow-hidden">
                   <div 
                     className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center text-white shrink-0 shadow-sm"

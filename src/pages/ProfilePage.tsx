@@ -1,9 +1,10 @@
-import { useState, useRef } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useForm } from 'react-hook-form';
+import { useNavigate } from 'react-router-dom';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
-  User, LogOut, KeyRound, Palette, CreditCard, Tag, Camera, Moon, Sun, Monitor, ShieldAlert,
-  ChevronRight, ArrowLeft, Mail, Calendar, Settings2, UserCog, Paintbrush
+  User, LogOut, KeyRound, Palette, Camera, Moon, Sun, Monitor, ShieldAlert, ShieldCheck,
+  ChevronRight, ArrowLeft, Mail, Calendar, UserCog, Paintbrush, Loader2
 } from 'lucide-react';
 import { useAuth } from '@/providers/AuthProvider';
 import { signOut, reauthenticate, updateUserPassword, deleteUserAccount } from '@/firebase/auth';
@@ -14,15 +15,14 @@ import { usePreferencesStore } from '@/stores/preferencesStore';
 import type { ThemePreset } from '@/types';
 import { THEME_PRESETS } from '@/constants/app';
 import { updateNameSchema, changePasswordSchema, type UpdateNameFormData, type ChangePasswordFormData } from '@/validators/schemas';
+import { getGreeting } from '@/utils/greeting';
 
 import { Avatar } from '@/components/ui/Avatar';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
-import { AccountManager } from '@/components/profile/AccountManager';
-import { CategoryManager } from '@/components/profile/CategoryManager';
 
-type ActiveSection = 'main' | 'name' | 'password' | 'theme' | 'accounts' | 'categories' | 'delete';
+type ActiveSection = 'main' | 'name' | 'password' | 'theme' | 'delete';
 
 export default function ProfilePage() {
   const { user, userProfile } = useAuth();
@@ -48,24 +48,6 @@ export default function ProfilePage() {
         <ThemePreferencesView onBack={() => setActiveSection('main')} />
       )}
 
-      {activeSection === 'accounts' && (
-        <div className="card card-solid card-p-md shadow-lg border border-[var(--color-border)] rounded-3xl bg-[var(--color-card)]">
-          <Button variant="ghost" size="sm" onClick={() => setActiveSection('main')} icon={<ArrowLeft size={16} />} className="mb-4">
-            Voltar ao Perfil
-          </Button>
-          <AccountManager />
-        </div>
-      )}
-
-      {activeSection === 'categories' && (
-        <div className="card card-solid card-p-md shadow-lg border border-[var(--color-border)] rounded-3xl bg-[var(--color-card)]">
-          <Button variant="ghost" size="sm" onClick={() => setActiveSection('main')} icon={<ArrowLeft size={16} />} className="mb-4">
-            Voltar ao Perfil
-          </Button>
-          <CategoryManager />
-        </div>
-      )}
-
       {activeSection === 'delete' && (
         <DeleteAccountView onBack={() => setActiveSection('main')} />
       )}
@@ -79,9 +61,12 @@ export default function ProfilePage() {
 
 function MainProfileView({ onNavigate }: { onNavigate: (s: ActiveSection) => void }) {
   const { userProfile, user } = useAuth();
+  const navigate = useNavigate();
   const updateProfile = useUpdateProfile();
   const openConfirmDialog = useUIStore((s) => s.openConfirmDialog);
+  const addToast = useUIStore((s) => s.addToast);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
 
   const handleLogout = () => {
     openConfirmDialog({
@@ -92,31 +77,56 @@ function MainProfileView({ onNavigate }: { onNavigate: (s: ActiveSection) => voi
     });
   };
 
-  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+  const handlePhotoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const input = event.currentTarget;
+    const file = input.files?.[0];
     if (!file || !user) return;
-    
-    if (!file.type.startsWith('image/')) {
+
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+    if (!allowedTypes.includes(file.type)) {
+      addToast({ type: 'warning', title: 'Formato não suportado', description: 'Escolha uma imagem JPG, PNG, WEBP ou GIF.' });
+      input.value = '';
       return;
     }
-    
+
+    if (file.size > 5 * 1024 * 1024) {
+      addToast({ type: 'warning', title: 'Imagem muito grande', description: 'Escolha uma imagem de até 5 MB.' });
+      input.value = '';
+      return;
+    }
+
+    setIsUploadingPhoto(true);
     try {
-      const extension = file.name.split('.').pop() || 'jpg';
+      const extension = file.type === 'image/jpeg' ? 'jpg' : file.type.split('/')[1];
       const path = `avatars/${user.uid}_${Date.now()}.${extension}`;
       const url = await uploadFile(user.uid, path, file);
-      await updateProfile.mutateAsync({ photoURL: url, avatar: url });
+      await updateProfile.mutateAsync({ photoURL: url });
     } catch (error) {
-      console.error(error);
+      const code = (error as { code?: string }).code;
+      if (code?.startsWith('storage/')) {
+        const description = code === 'storage/unauthorized'
+          ? 'O Firebase Storage não autorizou o envio. Verifique se as regras do Storage foram publicadas.'
+          : code === 'storage/bucket-not-found'
+            ? 'O bucket de imagens do Firebase não foi encontrado.'
+            : 'Não foi possível enviar a foto. Verifique sua conexão e tente novamente.';
+        addToast({ type: 'error', title: 'Erro ao enviar foto', description });
+      }
+      console.error('Erro ao atualizar a foto:', error);
+    } finally {
+      setIsUploadingPhoto(false);
+      input.value = '';
     }
   };
 
-  // Extrair primeiro nome ou abreviação
-  const getGreeting = () => {
-    const hours = new Date().getHours();
-    if (hours < 12) return 'Bom dia';
-    if (hours < 18) return 'Boa tarde';
-    return 'Boa noite';
-  };
+  const [currentHour, setCurrentHour] = useState(() => new Date().getHours());
+
+  useEffect(() => {
+    const updateHour = () => setCurrentHour(new Date().getHours());
+    const timer = window.setInterval(updateHour, 60_000);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  const profileGreeting = getGreeting(undefined, currentHour);
 
   return (
     <div className="flex flex-col gap-6 animate-fade-in">
@@ -131,7 +141,7 @@ function MainProfileView({ onNavigate }: { onNavigate: (s: ActiveSection) => voi
           <div className="relative group">
             <div className="rounded-full p-1.5 bg-white/20 backdrop-blur-sm transition-all duration-300 group-hover:scale-105">
               <Avatar 
-                src={userProfile?.photoURL || userProfile?.avatar} 
+                src={userProfile?.photoURL}
                 name={userProfile?.name} 
                 size="xl" 
                 className="w-24 h-24 md:w-28 md:h-28 border-2 border-white/50 object-cover shadow-inner"
@@ -139,25 +149,29 @@ function MainProfileView({ onNavigate }: { onNavigate: (s: ActiveSection) => voi
             </div>
             
             <button 
-              className="absolute bottom-1 right-1 bg-white text-[var(--color-button)] p-2.5 rounded-full shadow-lg hover:scale-110 active:scale-95 transition-all duration-200 border border-white/20"
+              type="button"
+              className="absolute bottom-1 right-1 bg-white text-[var(--color-button)] p-2.5 rounded-full shadow-lg hover:scale-110 active:scale-95 transition-all duration-200 border border-white/20 disabled:cursor-wait disabled:opacity-70"
               onClick={() => fileInputRef.current?.click()}
               title="Alterar foto de perfil"
+              aria-label="Alterar foto de perfil"
+              disabled={isUploadingPhoto}
             >
-              <Camera size={16} className="font-bold stroke-[2.5]" />
+              {isUploadingPhoto ? <Loader2 size={16} className="animate-spin" /> : <Camera size={16} className="font-bold stroke-[2.5]" />}
             </button>
             
             <input 
               type="file" 
               ref={fileInputRef} 
               className="hidden" 
-              accept="image/*"
+              accept="image/jpeg,image/png,image/webp,image/gif"
               onChange={handlePhotoUpload}
+              disabled={isUploadingPhoto}
             />
           </div>
 
           <div className="flex-1 flex flex-col gap-2">
             <span className="text-white/85 text-xs font-semibold uppercase tracking-wider bg-white/10 px-3 py-1 rounded-full self-center md:self-start backdrop-blur-md">
-              🏦 Membro Premium
+              {userProfile?.role === 'admin' ? '🛡️ Desenvolvedora e administradora' : '🏦 Membro Premium'}
             </span>
             <h2 className="text-2xl md:text-3xl font-extrabold tracking-tight">
               {userProfile?.name}
@@ -168,37 +182,31 @@ function MainProfileView({ onNavigate }: { onNavigate: (s: ActiveSection) => voi
               </span>
               <span className="hidden md:inline text-white/40">•</span>
               <span className="flex items-center gap-1.5 justify-center md:justify-start">
-                <Calendar size={15} className="opacity-80" /> {getGreeting()}!
+                <Calendar size={15} className="opacity-80" /> {profileGreeting}!
               </span>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Grid Groups of Options */}
+      {/* Opções de perfil */}
       <div className="flex flex-col gap-6">
-        {/* Group 1: Gestão Financeira */}
-        <div>
-          <h3 className="text-xs font-bold text-[var(--color-text-secondary)] uppercase tracking-wider mb-2 px-1 flex items-center gap-1.5">
-            <Settings2 size={14} /> Finanças e Estrutura
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <PremiumMenuCard 
-              icon={<CreditCard size={22} className="text-blue-500" />}
-              title="Contas e Cartões"
-              description="Gerencie contas bancárias e limites de crédito"
-              onClick={() => onNavigate('accounts')}
-            />
-            <PremiumMenuCard 
-              icon={<Tag size={22} className="text-emerald-500" />}
-              title="Categorias"
-              description="Organize suas receitas e despesas por categorias"
-              onClick={() => onNavigate('categories')}
+        {userProfile?.role === 'admin' && (
+          <div>
+            <h3 className="mb-2 flex items-center gap-1.5 px-1 text-xs font-bold uppercase tracking-wider text-violet-500">
+              <ShieldCheck size={14} /> Administração
+            </h3>
+            <PremiumMenuCard
+              icon={<ShieldCheck size={22} className="text-violet-500" />}
+              title="Painel da desenvolvedora"
+              description="Usuários cadastrados, bloqueios e métricas de visitas"
+              onClick={() => navigate('/admin')}
+              fullWidth
             />
           </div>
-        </div>
+        )}
 
-        {/* Group 2: Personalização */}
+        {/* Personalização */}
         <div>
           <h3 className="text-xs font-bold text-[var(--color-text-secondary)] uppercase tracking-wider mb-2 px-1 flex items-center gap-1.5">
             <Paintbrush size={14} /> Aparência e Estilo

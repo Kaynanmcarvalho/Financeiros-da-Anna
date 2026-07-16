@@ -10,6 +10,24 @@ interface PreferencesState {
   applyToDOM: () => void;
 }
 
+function normalizePreferences(prefs: UserPreferences): UserPreferences {
+  const usesLegacySoftDark =
+    prefs.primaryColor.toUpperCase() === '#2D2433' &&
+    prefs.cardColor.toUpperCase() === '#1E1A23';
+
+  if (!usesLegacySoftDark) return prefs;
+
+  return {
+    ...prefs,
+    theme: 'dark',
+    primaryColor: '#F3C5DB',
+    buttonColor: '#E891B9',
+    cardColor: '#211C25',
+    accentColor: '#C995B8',
+    bottomBarColor: '#1E1A23',
+  };
+}
+
 function applyPreferencesToDOM(prefs: UserPreferences) {
   const root = document.documentElement;
 
@@ -18,13 +36,14 @@ function applyPreferencesToDOM(prefs: UserPreferences) {
     prefs.theme === 'dark' ||
     (prefs.theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
   root.setAttribute('data-theme', isDark ? 'dark' : 'light');
+  root.style.colorScheme = isDark ? 'dark' : 'light';
 
   // Colors
   root.style.setProperty('--color-primary', prefs.primaryColor);
   root.style.setProperty('--color-button', prefs.buttonColor);
-  root.style.setProperty('--color-card', prefs.cardColor);
+  root.style.setProperty('--color-card', isDark ? '#211C25' : prefs.cardColor);
   root.style.setProperty('--color-accent', prefs.accentColor);
-  root.style.setProperty('--color-bottom-bar', prefs.bottomBarColor);
+  root.style.setProperty('--color-bottom-bar', isDark ? '#1E1A23' : prefs.bottomBarColor);
 
   // Chart palette
   prefs.chartPalette.forEach((color, index) => {
@@ -50,8 +69,9 @@ export const usePreferencesStore = create<PreferencesState>((set, get) => ({
   isLoaded: false,
 
   setPreferences: (prefs) => {
-    set({ preferences: prefs, isLoaded: true });
-    applyPreferencesToDOM(prefs);
+    const normalizedPreferences = normalizePreferences(prefs);
+    set({ preferences: normalizedPreferences, isLoaded: true });
+    applyPreferencesToDOM(normalizedPreferences);
   },
 
   updatePreference: (key, value) => {

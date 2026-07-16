@@ -55,6 +55,26 @@ export function useCreateGoal() {
   });
 }
 
+type EditableGoalData = Pick<Goal, 'title' | 'targetAmount' | 'deadline' | 'color' | 'icon'>;
+
+export function useUpdateGoal() {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const addToast = useUIStore((s) => s.addToast);
+
+  return useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: EditableGoalData }) => {
+      if (!user) throw new Error('Não autenticado');
+      await updateDoc(doc(db, `users/${user.uid}/goals/${id}`), data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['goals'] });
+      addToast({ type: 'success', title: 'Desejo atualizado!' });
+    },
+    onError: () => addToast({ type: 'error', title: 'Erro ao atualizar desejo' }),
+  });
+}
+
 export function useAddGoalContribution() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -93,5 +113,23 @@ export function useDeleteGoal() {
       addToast({ type: 'success', title: 'Meta excluída' });
     },
     onError: () => addToast({ type: 'error', title: 'Erro ao excluir' }),
+  });
+}
+
+export function useCompleteGoal() {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const addToast = useUIStore((state) => state.addToast);
+
+  return useMutation({
+    mutationFn: async (goalId: string) => {
+      if (!user) throw new Error('Não autenticado');
+      await updateDoc(doc(db, `users/${user.uid}/goals/${goalId}`), { status: 'completed' });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['goals'] });
+      addToast({ type: 'success', title: 'Desejo marcado como realizado!' });
+    },
+    onError: () => addToast({ type: 'error', title: 'Erro ao concluir desejo' }),
   });
 }

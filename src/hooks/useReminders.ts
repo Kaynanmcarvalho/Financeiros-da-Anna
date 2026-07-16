@@ -52,6 +52,26 @@ export function useCreateReminder() {
   });
 }
 
+type EditableReminderData = Pick<Reminder, 'title' | 'amount' | 'dueDate' | 'recurrence' | 'linkedAccountId' | 'notifyDaysBefore'>;
+
+export function useUpdateReminder() {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const addToast = useUIStore((s) => s.addToast);
+
+  return useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: EditableReminderData }) => {
+      if (!user) throw new Error('Não autenticado');
+      await updateDoc(doc(db, `users/${user.uid}/reminders/${id}`), data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['reminders'] });
+      addToast({ type: 'success', title: 'Lembrete atualizado!' });
+    },
+    onError: () => addToast({ type: 'error', title: 'Erro ao atualizar lembrete' }),
+  });
+}
+
 export function useToggleReminder() {
   const { user } = useAuth();
   const queryClient = useQueryClient();

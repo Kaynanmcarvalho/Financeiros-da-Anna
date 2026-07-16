@@ -5,8 +5,7 @@
  * 18h–24h → "Boa noite, {nome}"
  * 00h–05h → "Boa madrugada, {nome}"
  */
-export function getGreeting(name?: string): string {
-  const hour = new Date().getHours();
+export function getGreeting(name?: string, hour = new Date().getHours()): string {
   let greeting = '';
 
   if (hour >= 5 && hour < 12) {
