@@ -1,5 +1,5 @@
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { Home, PlusCircle, Target, Heart, Bell, BarChart3 } from 'lucide-react';
 import { usePreferencesStore } from '@/stores/preferencesStore';
 import { Toast } from '@/components/ui/Toast';
@@ -34,18 +34,15 @@ export function AppLayout() {
   return (
     <div className="app-layout">
       <main className="app-main">
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={location.pathname}
-            initial={animationsEnabled ? { opacity: 0, y: 8 } : undefined}
-            animate={animationsEnabled ? { opacity: 1, y: 0 } : undefined}
-            exit={animationsEnabled ? { opacity: 0, y: -8 } : undefined}
-            transition={{ duration: 0.2, ease: 'easeInOut' }}
-            className="page-container"
-          >
-            <Outlet />
-          </motion.div>
-        </AnimatePresence>
+        <motion.div
+          key={location.pathname}
+          initial={animationsEnabled ? { opacity: 0, y: 8 } : undefined}
+          animate={animationsEnabled ? { opacity: 1, y: 0 } : undefined}
+          transition={{ duration: 0.2, ease: 'easeInOut' }}
+          className="page-container"
+        >
+          <Outlet />
+        </motion.div>
       </main>
 
       <nav className="bottom-nav" role="navigation" aria-label="Navegação principal">

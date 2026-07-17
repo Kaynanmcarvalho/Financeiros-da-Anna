@@ -1,10 +1,11 @@
 import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip } from 'recharts';
-import { Search, Download, BarChart3 } from 'lucide-react';
+import { Search, Download, BarChart3, RefreshCw, TriangleAlert } from 'lucide-react';
 
 import { useTransactions } from '@/hooks/useTransactions';
 import { useCategories } from '@/hooks/useCategories';
+import { useAccounts } from '@/hooks/useAccounts';
 import { usePreferencesStore } from '@/stores/preferencesStore';
 import { formatCurrency } from '@/utils/currency';
 import type { CategoryType } from '@/types';
@@ -22,13 +23,32 @@ export default function ReportsPage() {
   const animationsEnabled = usePreferencesStore((s) => s.preferences.animationsEnabled);
   const hideValues = usePreferencesStore((s) => s.preferences.hideValues);
 
-  const { data: transactions, isLoading: isTxLoading } = useTransactions(
+  const {
+    data: transactions,
+    isLoading: isTxLoading,
+    isError: isTxError,
+    error: txError,
+    refetch: refetchTransactions,
+  } = useTransactions(
     currentDate.getMonth(),
     currentDate.getFullYear()
   );
-  const { data: categories, isLoading: isCatLoading } = useCategories();
+  const {
+    data: categories,
+    isLoading: isCatLoading,
+    isError: isCatError,
+    error: catError,
+    refetch: refetchCategories,
+  } = useCategories();
+  const { data: accounts } = useAccounts();
 
   const isLoading = isTxLoading || isCatLoading;
+  const hasLoadError = isTxError || isCatError;
+  const loadError = txError ?? catError;
+
+  const handleRetry = () => {
+    void Promise.all([refetchTransactions(), refetchCategories()]);
+  };
 
   // Process data for charts
   const { chartData, totalAmount } = useMemo(() => {
@@ -75,10 +95,13 @@ export default function ReportsPage() {
       const typeStr = tx.type === 'expense' ? 'Despesa' : tx.type === 'income' ? 'Receita' : 'Transferência';
       const valStr = (tx.amount / 100).toFixed(2).replace('.', ',');
       const dateStr = new Date(tx.date.toMillis()).toLocaleDateString('pt-BR');
+      const accountName = tx.accountId
+        ? (accounts?.find(a => a.id === tx.accountId)?.name || 'Conta apagada')
+        : 'Dinheiro Vivo';
       // Escape description if it has commas
       const desc = `"${tx.description.replace(/"/g, '""')}"`;
       
-      csvRows.push(`${dateStr},${typeStr},${cat},"${valStr}",${tx.accountId || 'Dinheiro Vivo'},${desc}`);
+      csvRows.push(`${dateStr},${typeStr},${cat},"${valStr}",${accountName},${desc}`);
     });
     
     const csvContent = "data:text/csv;charset=utf-8,\uFEFF" + csvRows.join('\n');
@@ -163,8 +186,33 @@ export default function ReportsPage() {
         />
       </div>
 
-      {isLoading ? (
-        <div className="flex flex-col gap-6">
+      {hasLoadError ? (
+        <Card
+          role="alert"
+          className="flex flex-col items-center gap-4 rounded-[24px] border border-[var(--color-danger)]/25 bg-[var(--surface-raised)] p-6 text-center shadow-[var(--shadow-soft)]"
+        >
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--color-danger)]/10 text-[var(--color-danger)]">
+            <TriangleAlert size={24} aria-hidden="true" />
+          </div>
+          <div>
+            <h2 className="text-lg font-extrabold text-[var(--color-text)]">Não foi possível carregar o relatório</h2>
+            <p className="mt-1 text-sm leading-relaxed text-[var(--color-text-secondary)]">
+              Verifique sua conexão e tente novamente. Seus lançamentos continuam seguros.
+            </p>
+            {import.meta.env.DEV && loadError instanceof Error && (
+              <p className="mt-2 break-words text-xs text-[var(--color-text-muted)]">{loadError.message}</p>
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={handleRetry}
+            className="flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl bg-[var(--color-button)] px-4 py-3 text-sm font-extrabold text-white transition-all hover:brightness-105 focus:outline-none focus:ring-4 focus:ring-[var(--color-button)]/20"
+          >
+            <RefreshCw size={18} aria-hidden="true" /> Tentar novamente
+          </button>
+        </Card>
+      ) : isLoading ? (
+        <div className="flex flex-col gap-6" aria-label="Carregando relatório">
           <SkeletonCard />
           <SkeletonCard />
           <SkeletonCard />
