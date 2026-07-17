@@ -37,6 +37,23 @@ export function useTransactions(month: number, year: number) {
   });
 }
 
+/** Histórico completo usado para calcular o saldo de Dinheiro Vivo (sem conta). */
+export function useAllTransactions() {
+  const { user } = useAuth();
+
+  return useQuery({
+    queryKey: ['transactions', user?.uid, 'all'],
+    queryFn: async () => {
+      if (!user) throw new Error('Não autenticado');
+
+      const colRef = collection(db, `users/${user.uid}/transactions`);
+      const snapshot = await getDocs(query(colRef, orderBy('date', 'desc')));
+      return snapshot.docs.map((d) => ({ id: d.id, ...d.data() }) as Transaction);
+    },
+    enabled: !!user,
+  });
+}
+
 export function useCreateTransaction() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
